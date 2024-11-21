@@ -1,0 +1,227 @@
+public partial class QLnhanvien : Form
+{
+    SqlConnection conn = new SqlConnection($@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={Application.StartupPath}\qlks.mdf;Integrated Security=True;Connect Timeout=30");
+    DataTable mh = new DataTable();
+    public Nhanvien()
+    {
+        InitializeComponent();
+    }
+    void nhanvien()
+    {
+        try
+        {
+            SqlCommand cmd = new SqlCommand("SELECT * FROM NhanVien", conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            mh.Clear();
+            adapter.Fill(mh);
+            dgvNhanVien.DataSource = mh;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tải dữ liệu nhân viên  : " + ex.Message);
+        }
+    }
+    private void Nhanvien_Load(object sender, EventArgs e)
+    {
+        try
+        {
+            conn.Open();
+            nhanvien();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Không thể kết nối tới cơ sở dữ liệu: " + ex.Message);
+        }
+    }
+
+    private void btnThem_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtMaNV.Text) || string.IsNullOrWhiteSpace(txtTenNV.Text) || string.IsNullOrWhiteSpace(txtCMT.Text) ||
+   string.IsNullOrWhiteSpace(txtDiaChi.Text) || string.IsNullOrWhiteSpace(txtSDT.Text) || dtpNgaySinh.Value == null)
+        {
+            MessageBox.Show("Vui lòng điền đầy đủ thông tin nhân viên!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using (SqlCommand cmd = new SqlCommand("INSERT INTO NhanVien (MaNV, TenNV, NgaySinh, GioiTinh, CMT, DiaChi, SDT) VALUES (@MaNV, @TenNV, @NgaySinh, @GioiTinh, @CMT, @DiaChi, @SDT)", conn))
+        {
+            cmd.Parameters.AddWithValue("@MaNV", txtMaNV.Text);
+            cmd.Parameters.AddWithValue("@TenNV", txtTenNV.Text);
+            cmd.Parameters.AddWithValue("@NgaySinh", dtpNgaySinh.Value);
+            cmd.Parameters.AddWithValue("@GioiTinh", cbGioiTinh.SelectedItem);
+            cmd.Parameters.AddWithValue("@CMT", txtCMT.Text);
+            cmd.Parameters.AddWithValue("@DiaChi", txtDiaChi.Text);
+            cmd.Parameters.AddWithValue("@SDT", txtSDT.Text);
+
+            try
+            {
+                if (cmd.ExecuteNonQuery() > 0)
+                {
+                    MessageBox.Show("Thêm nhân viên thành công");
+                    nhanvien(); 
+                }
+                else
+                {
+                    MessageBox.Show("Thêm nhân viên thất bại");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi thêm: " + ex.Message);
+            }
+        }
+    }
+
+    private void btnSua_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtMaNV.Text) || string.IsNullOrWhiteSpace(txtTenNV.Text) || string.IsNullOrWhiteSpace(txtCMT.Text) ||
+   string.IsNullOrWhiteSpace(txtDiaChi.Text) || string.IsNullOrWhiteSpace(txtSDT.Text) || dtpNgaySinh.Value == null)
+        {
+            MessageBox.Show("Vui lòng điền đầy đủ thông tin nhân viên!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using (SqlCommand cmd = new SqlCommand("UPDATE NhanVien SET TenNV = @TenNV, NgaySinh = @NgaySinh, GioiTinh = @GioiTinh, CMT = @CMT, DiaChi = @DiaChi, SDT = @SDT WHERE MaNV = @MaNV", conn))
+        {
+            cmd.Parameters.AddWithValue("@MaNV", txtMaNV.Text);
+            cmd.Parameters.AddWithValue("@TenNV", txtTenNV.Text);
+            cmd.Parameters.AddWithValue("@NgaySinh", dtpNgaySinh.Value);
+            cmd.Parameters.AddWithValue("@GioiTinh", cbGioiTinh.SelectedItem);
+            cmd.Parameters.AddWithValue("@CMT", txtCMT.Text);
+            cmd.Parameters.AddWithValue("@DiaChi", txtDiaChi.Text);
+            cmd.Parameters.AddWithValue("@SDT", txtSDT.Text);
+
+            try
+            {
+                if (cmd.ExecuteNonQuery() > 0)
+                {
+                    MessageBox.Show("Cập nhật nhân viên thành công");
+                    nhanvien(); // Cập nhật lại danh sách nhân viên
+                }
+                else
+                {
+                    MessageBox.Show("Không tìm thấy nhân viên cần sửa");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi sửa: " + ex.Message);
+            }
+        }
+    }
+
+    private void btnXoa_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtMaNV.Text))
+        {
+            MessageBox.Show("Vui lòng chọn nhân viên cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (MessageBox.Show("Bạn có chắc chắn muốn xóa nhân viên này không?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+        {
+            using (SqlCommand cmd = new SqlCommand("DELETE FROM NhanVien WHERE MaNV = @MaNV", conn))
+            {
+                cmd.Parameters.AddWithValue("@MaNV", txtMaNV.Text);
+
+                try
+                {
+                    if (cmd.ExecuteNonQuery() > 0)
+                    {
+                        MessageBox.Show("Xóa nhân viên thành công");
+                        nhanvien(); // Cập nhật lại danh sách nhân viên
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không tìm thấy nhân viên cần xóa");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi xóa: " + ex.Message);
+                }
+            }
+        }
+    }
+
+    private void btnTimKiem_Click(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(txtMaNV.Text))
+        {
+            MessageBox.Show("Vui lòng nhập Mã nhân viên để tìm kiếm!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        string query = "SELECT * FROM NhanVien WHERE MaNV LIKE @MaNV";
+
+        SqlCommand cmd = new SqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@MaNV", "%" + txtMaNV.Text + "%"); 
+        SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+        DataTable dtSearchResults = new DataTable();
+
+        try
+        {            
+            adapter.Fill(dtSearchResults);             
+            if (dtSearchResults.Rows.Count > 0)
+            {
+                dgvNhanVien.DataSource = dtSearchResults; 
+            }
+            else
+            {
+                MessageBox.Show("Không tìm thấy nhân viên với Mã nhân viên đã nhập.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tìm kiếm: " + ex.Message);
+        }
+    }
+
+    private void btnBoqua_Click(object sender, EventArgs e)
+    {
+        txtMaNV.Clear();
+        txtTenNV.Clear();
+        txtCMT.Clear();
+        txtDiaChi.Clear();
+        txtSDT.Clear();
+        dtpNgaySinh.Value = DateTime.Now; 
+        cbGioiTinh.SelectedIndex = -1;
+    }
+
+    private void panel1_Paint(object sender, PaintEventArgs e)
+    {
+
+    }
+
+    private void btnThoat_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
+
+    private void dgvNhanVien_CellContentClick(object sender, DataGridViewCellEventArgs e)
+    {
+        try
+        {              
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {                 
+                string maNV = dgvNhanVien.Rows[e.RowIndex].Cells["MaNV"].Value.ToString();
+                string tenNV = dgvNhanVien.Rows[e.RowIndex].Cells["TenNV"].Value.ToString();
+                string ngaySinh = dgvNhanVien.Rows[e.RowIndex].Cells["NgaySinh"].Value.ToString();
+                string gioiTinh = dgvNhanVien.Rows[e.RowIndex].Cells["GioiTinh"].Value.ToString();
+                string cmt = dgvNhanVien.Rows[e.RowIndex].Cells["CMT"].Value.ToString();
+                string diaChi = dgvNhanVien.Rows[e.RowIndex].Cells["DiaChi"].Value.ToString();
+                string sdt = dgvNhanVien.Rows[e.RowIndex].Cells["SDT"].Value.ToString();
+                txtMaNV.Text = maNV;
+                txtTenNV.Text = tenNV;
+                dtpNgaySinh.Value = DateTime.Parse(ngaySinh);
+                cbGioiTinh.SelectedItem = gioiTinh;
+                txtCMT.Text = cmt;
+                txtDiaChi.Text = diaChi;
+                txtSDT.Text = sdt;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi chọn ô trong DataGridView: " + ex.Message);
+        }
+    }
+}
