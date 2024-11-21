@@ -1,0 +1,123 @@
+public partial class DoanhThu : Form
+{
+    SqlConnection conn = new SqlConnection($@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={Application.StartupPath}\qlks.mdf;Integrated Security=True;Connect Timeout=30");
+    DataTable mh = new DataTable();
+    public Doanhthu()
+    {
+        InitializeComponent();
+        txtTongTien.Enabled = false;
+    }
+
+    private void btnThongKe_Click(object sender, EventArgs e)
+    {
+        if (dtpNgayBD.Value == null || dtpNgayKT.Value == null)
+        {
+            MessageBox.Show("Vui lòng chọn cả Ngày Bắt Đầu và Ngày Kết Thúc!");
+            return;
+        }
+
+        // Tính tổng tiền
+        decimal tongTien = 0;
+        try
+        {
+            if (conn.State == ConnectionState.Closed)
+                conn.Open();
+
+            DateTime ngayBD = dtpNgayBD.Value;
+            DateTime ngayKT = dtpNgayKT.Value;
+
+            string query = @"
+                SELECT SUM(TongTien) 
+                FROM TraPhong 
+                WHERE NgayTra >= @NgayBD AND NgayTra <= @NgayKT";
+
+            SqlCommand cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@NgayBD", ngayBD);
+            cmd.Parameters.AddWithValue("@NgayKT", ngayKT);
+
+            object result = cmd.ExecuteScalar();
+            if (result != DBNull.Value && result != null)
+            {
+                tongTien = Convert.ToDecimal(result);
+                txtTongTien.Text = tongTien.ToString("N0"); // Hiển thị tổng tiền
+            }
+            else
+            {
+                txtTongTien.Text = "0"; // Nếu không có kết quả, hiển thị 0
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tính tổng tiền: " + ex.Message);
+        }
+        finally
+        {
+            conn.Close();
+        }
+
+        // Thêm doanh thu vào bảng DoanhThu
+        try
+        {
+            if (conn.State == ConnectionState.Closed)
+                conn.Open();
+
+            DateTime ngayBD = dtpNgayBD.Value;
+            DateTime ngayKT = dtpNgayKT.Value;
+
+            string insertQuery = @"
+                INSERT INTO DoanhThu (NgayBD, NgayKT, TongTien)
+                VALUES (@NgayBD, @NgayKT, @TongTien)";
+
+            SqlCommand cmdInsert = new SqlCommand(insertQuery, conn);
+            cmdInsert.Parameters.AddWithValue("@NgayBD", ngayBD);
+            cmdInsert.Parameters.AddWithValue("@NgayKT", ngayKT);
+            cmdInsert.Parameters.AddWithValue("@TongTien", tongTien);
+
+            cmdInsert.ExecuteNonQuery(); 
+            MessageBox.Show("Thêm doanh thu  thành công.");
+            phong();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi thêm doanh thu vào cơ sở dữ liệu: " + ex.Message);
+        }
+        finally
+        {
+            conn.Close();
+        }
+    }
+    void phong()
+    {
+        try
+        {
+            SqlCommand cmd = new SqlCommand("SELECT * FROM DoanhThu", conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            mh.Clear();
+            adapter.Fill(mh);
+            dgvThongKe.DataSource = mh;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tải dữ liệu  : " + ex.Message);
+        }
+    }        
+
+    private void btnThoat_Click(object sender, EventArgs e)
+    {
+        Close();
+    }
+
+    private void Doanhthu_Load(object sender, EventArgs e)
+    {
+        try
+        {
+            conn.Open();
+            phong();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Không thể kết nối tới cơ sở dữ liệu: " + ex.Message);
+        }
+    }
+
+}
