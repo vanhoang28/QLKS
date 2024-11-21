@@ -1,0 +1,175 @@
+public partial class TimKiemnhanvien : Form
+{
+    SqlConnection conn = new SqlConnection($@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={Application.StartupPath}\qlks.mdf;Integrated Security=True;Connect Timeout=30");
+    DataTable mh = new DataTable();
+    public TimNV()
+    {
+        InitializeComponent();
+    }
+    void nhanvien()
+    {
+        try
+        {
+            SqlCommand cmd = new SqlCommand("SELECT * FROM NhanVien", conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            mh.Clear();
+            adapter.Fill(mh);
+            dgvThongTinPhong.DataSource = mh;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tải dữ liệu nhân viên: " + ex.Message);
+        }
+    }
+    private void TimNV_Load(object sender, EventArgs e)
+    {
+        try
+        {
+            conn.Open();
+            nhanvien();
+            cbKhoa.SelectedIndexChanged += cbKhoa_SelectedIndexChanged;
+            cbTuKhoa.DropDownStyle = ComboBoxStyle.DropDown;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Không thể kết nối tới cơ sở dữ liệu: " + ex.Message);
+        }
+    }
+
+    private void btnTimKiem_Click(object sender, EventArgs e)
+    {
+        if (cbKhoa.SelectedIndex == -1 || string.IsNullOrEmpty(cbTuKhoa.Text))
+        {
+            MessageBox.Show("Vui lòng chọn khóa và nhập từ khóa.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        try
+        {
+            string searchColumn = cbKhoa.SelectedItem.ToString();
+            string keyword = cbTuKhoa.Text; 
+            string query = string.Empty;
+
+            switch (searchColumn)
+            {
+                case "Mã nhân viên":
+                    query = "SELECT * FROM NhanVien WHERE MaNV LIKE @Keyword";
+                    break;
+                case "Tên nhân viên":
+                    query = "SELECT * FROM NhanVien WHERE TenNV LIKE @Keyword";
+                    break;
+                case "Số CMT":
+                    query = "SELECT * FROM NhanVien WHERE CMT LIKE @Keyword";
+                    break;
+                case "Giới tính":
+                    query = "SELECT * FROM NhanVien WHERE GioiTinh = @Keyword";
+                    break;
+                case "Địa chỉ":
+                    query = "SELECT * FROM NhanVien WHERE DiaChi LIKE @Keyword";
+                    break;
+                case "Tuổi":
+                    query = "SELECT * FROM NhanVien WHERE YEAR(GETDATE()) - YEAR(NgaySinh) = @Keyword";
+                    break;
+                default:
+                    MessageBox.Show("Chọn khóa tìm kiếm hợp lệ.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+            }
+
+            SqlCommand cmd = new SqlCommand(query, conn);
+
+            if (searchColumn == "Tuổi")
+            {
+                if (int.TryParse(keyword, out int age))
+                {
+                    cmd.Parameters.AddWithValue("@Keyword", age);
+                }
+                else
+                {
+                    MessageBox.Show("Vui lòng nhập tuổi hợp lệ (số nguyên).", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            else
+            {
+                cmd.Parameters.AddWithValue("@Keyword", "%" + keyword + "%");
+            }
+
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            mh.Clear();
+            adapter.Fill(mh);
+
+            if (mh.Rows.Count == 0)
+            {
+                MessageBox.Show("Không tìm thấy kết quả nào.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                dgvThongTinPhong.DataSource = mh;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tìm kiếm: " + ex.Message);
+        }
+    }
+
+    private void cbKhoa_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (cbKhoa.SelectedIndex == -1)
+        {
+            return;
+        }
+
+        string selectedColumn = cbKhoa.SelectedItem.ToString();
+        string query = string.Empty;
+
+        switch (selectedColumn)
+        {
+            case "Mã nhân viên":
+                query = "SELECT DISTINCT MaNV FROM NhanVien";
+                break;
+            case "Tên nhân viên":
+                query = "SELECT DISTINCT TenNV FROM NhanVien";
+                break;
+            case "Số CMT":
+                query = "SELECT DISTINCT CMT FROM NhanVien";
+                break;
+            case "Giới tính":
+                query = "SELECT DISTINCT GioiTinh FROM NhanVien";
+                break;
+            case "Địa chỉ":
+                query = "SELECT DISTINCT DiaChi FROM NhanVien";
+                break;
+            case "Tuổi":
+                
+                MessageBox.Show("Nhập số tuổi trực tiếp vào ô từ khóa.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                cbTuKhoa.Items.Clear();
+                return;
+            default:
+                return;
+        }
+
+        try
+        {
+            SqlCommand cmd = new SqlCommand(query, conn);
+            SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+
+            cbTuKhoa.Items.Clear();
+            foreach (DataRow row in dt.Rows)
+            {
+                cbTuKhoa.Items.Add(row[0].ToString());
+            }
+
+            if (cbTuKhoa.Items.Count > 0)
+            {
+                cbTuKhoa.SelectedIndex = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Lỗi khi tải dữ liệu từ khóa: " + ex.Message);
+        }
+    }
+}
